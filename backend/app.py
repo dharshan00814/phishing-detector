@@ -148,6 +148,11 @@ def _is_trusted_domain(domain):
     return any(domain == base or domain.endswith(f'.{base}') for base in TRUSTED_BASE_DOMAINS)
 
 
+def _has_www_typo_prefix(domain):
+    """Detect common typo where ww. is used instead of www."""
+    return (domain or '').lower().startswith('ww.')
+
+
 def combine_scan_result(url):
     """Combine ML + rule-based output and apply hardening rules."""
     ml_result = predict_url_ml(url)
@@ -163,6 +168,11 @@ def combine_scan_result(url):
         risk_score = max(risk_score, 85.0)
         reason.append('Known temporary tunnel domain')
 
+    # Common typo pattern: ww.<brand>.com should not be treated as trusted www.
+    if _has_www_typo_prefix(domain):
+        risk_score = max(risk_score, 70.0)
+        reason.append('Possible typo domain prefix (ww. instead of www.)')
+
     # Low-confidence ML safe prediction should not be treated as fully safe.
     if ml_result['prediction'] == 0 and ml_result['ml_confidence'] < 70:
         risk_score = max(risk_score, 60.0)
@@ -173,6 +183,7 @@ def combine_scan_result(url):
     if (
         url.startswith('https://')
         and _is_trusted_domain(domain)
+        and not _has_www_typo_prefix(domain)
         and safe_browsing_is_safe is not False
         and not any(domain.endswith(tunnel) for tunnel in SUSPICIOUS_TUNNEL_DOMAINS)
     ):
@@ -328,6 +339,10 @@ def evaluate_domain_checker(domain):
     if len(labels) > 3:
         risk_score += 12
         indicators.append('Excessive subdomains')
+
+    if labels and labels[0] == 'ww':
+        risk_score += 35
+        indicators.append('Typo prefix detected: ww. (expected www.)')
 
     digit_count = sum(char.isdigit() for char in host_part)
     if digit_count >= 2:
