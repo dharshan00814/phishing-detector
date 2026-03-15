@@ -1,0 +1,66 @@
+email_text,label
+"Hi John, just confirming our 2pm meeting tomorrow. See you then! - Alice",0
+"Team, attached is the Q3 sales report. Please review by EOD. Thanks, Sarah",0
+"Dear customer, your subscription will renew on 15th. Questions? Reply here. Best, Acme Billing",0
+"Hello valued member, new webinar invite attached. Register today! Regards, Events Team",0
+"Hi everyone, office closed Monday for holiday. Enjoy! - HR",0
+"John, invoice #INV-1234 attached for your records. Paid? Let me know. - Accounting",0
+"Team meeting notes from yesterday attached. Action items assigned. - Project Lead",0
+"Dear John Smith, welcome to our newsletter. Unsubscribe link at bottom. Cheers!",0
+"Hi Sarah, can you approve this expense report by noon? Link: approvallink.com - Finance",0
+"Hello colleagues, new policy document attached. Please acknowledge receipt. - Compliance",0
+"Reminder: Password policy update training mandatory by Friday. Link in Slack. - IT",0
+"Dear member, your loyalty points expire soon. Redeem here: points.acme.com - Rewards",0
+"Hi team, updated project timeline attached. Review and comment. - PM",0
+"Customer service notice: Maintenance scheduled Saturday 2am-6am. Sorry for inconvenience.",0
+"Hi David, contract renewal discussion notes attached. Call to schedule? - Legal",0
+"Hello, shipment #SH123 tracking updated. Expected delivery Tue. - Logistics",0
+"Team, quarterly goals meeting rescheduled to Thursday 10am. Zoom link follows.",0
+"Dear subscriber, new content recommendations based on your reads. Enjoy!",0
+"Hi Lisa, performance review scheduled Wed 3pm. Prep materials? - Manager",0
+"Invoice reminder: Payment #4567 due Friday. Portal: billing.acme.com - Accounts",0
+"Welcome onboard! Orientation schedule attached. HR contact if questions.",0
+"Hi Mark, vendor contract review needed by EOD. Doc attached. - Procurement",0
+"System maintenance notice: All services down 1hr Sat night. Plan accordingly.",0
+"Dear user, feedback survey - 2 mins. Help us improve! Link: survey.acme.com",0
+"Hello team, budget approval meeting canceled. Reschedule next week.",0
+"Hi Rachel, expense approval pending your signoff. Portal link sent.",0
+"Customer update: New feature rollout next week. Details attached.",0
+"Team, org chart update effective immediately. Attached for reference.",0
+"Dear colleague, diversity training registration open. Deadline end of month.",0
+"Hi everyone, happy holidays! Office closed 24th-26th. Enjoy break!",0
+"Invoice #789 attached for approval. Questions? Reply all. - Finance",0
+"URGENT: Your account has been COMPROMISED! Click here to SECURE NOW: secure-login.xyz",1
+"SECURITY ALERT: Unusual login detected. VERIFY identity immediately: verify.acct.com/login",1
+"Account SUSPENDED due to violation. REACTIVATE within 24hrs: reactivate-now.top/update",1
+"Payment FAILED - Update billing IMMEDIATELY or service TERMINATED: billing-secure.ml/card",1
+"CRITICAL: Your PayPal needs verification! Confirm details: paypal-secure-login.xyz/verify",1
+"Amazon Order CONFIRMATION REQUIRED within 1hr or CANCELLED: amazon-confirm-order.ga/login",1
+"Bank Alert: Suspicious activity DETECTED. Review transactions NOW: bank-security.cf/dashboard",1
+"Microsoft Account LOCKED - Reset password URGENTLY: outlook-secure-reset.tk/password",1
+"Invoice OVERDUE - Pay IMMEDIATELY to avoid penalties: invoice-pay-urgent.work/settle",1
+"NETFLIX subscription issue - REACTIVATE account NOW: netflix-account-reactivate.click/pay",1
+"Your Apple ID REQUIRES verification! Click to continue: appleid-support.xyz/confirm",1
+"Chase Bank: Unusual transaction ALERT. Authorize or BLOCKED: chase-secure-alert.gq/transact",1
+"Gmail Security NOTICE - Unusual activity. Sign in to REVIEW: gmail-security.ga/login",1
+"CRITICAL UPDATE REQUIRED - Facebook account COMPROMISED: facebook-secure.xyz/recover",1
+"Tax Refund READY - Claim YOURS now before deadline: irs-refund-claim.ml/claim",1
+"Lottery WINNER! Claim $1M prize within 48hrs: lottery-prize-claim.top/winner",1
+"UPS Delivery PROBLEM - Reschedule or RETURNED: ups-delivery-issue.cf/reschedule",1
+"Password EXPIRED - Reset IMMEDIATELY or locked out: company-password-reset.xyz/new",1
+"HR Alert: Benefits enrollment DEADLINE tomorrow! Enroll now: benefits-enroll.ga/open",1
+"Software License EXPIRING - Renew TODAY or deactivated: license-renewal.work/activate",1
+"Domain REGISTRATION lapsed - REACTIVATE within 24hrs: domain-renew.cf/restore",1
+"Support Ticket URGENT - Action required within 1hr: support-ticket-escalate.ml/action",1
+"Order CONFIRMATION PENDING - Verify details NOW: order-verify.xyz/confirm",1
+"Membership RENEWAL required - Update payment IMMEDIATELY: membership-update.ga/card",1
+"Security PATCH available - Install CRITICALLY IMPORTANT update: security-patch.tk/install",1
+"Employee Review OVERDUE - Complete NOW or delayed: review-complete.ml/submit",1
+"Project DEADLINE approaching - Submit deliverables TODAY: project-deliver.cf/submit",1
+"CRITICAL: System OUTAGE detected - Restart services NOW: system-restart.xyz/fix",1
+https://www.coursera.org,0
+https://www.udemy.com,0 
+https://www.medium.com,0
+https://www.quora.com,0
+https://google.com,0
+

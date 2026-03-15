@@ -1,0 +1,24 @@
+{
+  "name": "Phishing Attack Defender",
+  "short_name": "Phishing Defender",
+  "description": "Advanced phishing detection with URL scanning, email analysis, domain checking, and takedown tools",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "theme_color_dark": "#1e40af",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTIgMjJDMTEuMjMgMjIgNi4yOCA2LjIzIDYgMTJzNS4yMyA0LjIzIDEwIDBsNS43Mi01LjIzYy0uNDItMS42LTAuNjgtMy4zMS0uNjgtNS4wNnMtLjIzLTQuMTMuNjgtNS4wNmM0LjMgMi4zOCAxMCA0LjIzIDEwIDBzLTUuNy0xLjkzLTEwLTQgLTEwIDQtNS4yMy00LjIzLTkgMThjMCAuNzcgLjE3IDEuNTcgLjQ1IDIuMjNsLTUuMjMgNC4yM0MxMiAyMiAxMiAyMloiIHN0cm9rZT0iIzNiODJmNiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTkgMTJMIDExIDE0TDE1IDEwIiBzdHJva2U9IiMzNjgyZjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTIgMjJDMTEuMjMgMjIgNi4yOCA2LjIzIDYgMTJzNS4yMyA0LjIzIDEwIDBsNS43Mi01LjIzYy0uNDItMS42LTAuNjgtMy4zMS0uNjgtNS4wNnMtLjIzLTQuMTMuNjgtNS4wNmM0LjMgMi4zOCAxMCA0LjIzIDEwIDBzLTUuNy0xLjkzLTEwLTQtMTAgNC01LjIzLTQuMjMtOSAxOGMwIC43NyAuMTcgMS41Ny40NSAyLjIzbC01LjIzIDQuMjNDMTEgMjIgMTIgMjIgMTIgMjJaIiBzdHJva2U9IiMzNjgyZjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik05IDEyTDExIDE0TDE1IDEwIiBzdHJva2U9IiMzNjgyZjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ]
+}
