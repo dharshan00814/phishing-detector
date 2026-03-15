@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Attack Defender</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="shield-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <h1>Phishing Attack Defender</h1>
+            </div>
+            <p class="subtitle">Protect yourself from malicious websites</p>
+        </header>
+
+        <main class="main-content">
+            <div class="search-box">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="urlInput" 
+                        placeholder="Enter website URL to check (e.g., https://example.com)"
+                        autocomplete="off"
+                    >
+                    <button id="checkBtn" class="check-btn">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Check URL
+                    </button>
+                </div>
+            </div>
+
+            <div id="resultContainer" class="result-container hidden">
+                <div class="result-card">
+                    <div id="resultHeader" class="result-header">
+                        <div id="resultIcon" class="result-icon"></div>
+                        <div id="resultTitle" class="result-title"></div>
+                    </div>
+                    
+                    <div class="risk-meter">
+                        <div class="risk-label">
+                            <span>Phishing Risk Score</span>
+                            <span id="riskPercentage" class="risk-percentage">0%</span>
+                        </div>
+                        <div class="risk-bar-container">
+                            <div id="riskBar" class="risk-bar"></div>
+                        </div>
+                    </div>
+
+                    <div id="resultMessage" class="result-message"></div>
+                    
+                    <div id="analysisDetails" class="analysis-details hidden">
+                        <h3>Analysis Details</h3>
+                        <ul id="analysisList" class="analysis-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analyzing URL...</p>
+            </div>
+
+            <div id="errorMessage" class="error-message hidden"></div>
+        </main>
+
+        <footer class="footer">
+            <p>Stay safe online! Always verify URLs before entering sensitive information.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
