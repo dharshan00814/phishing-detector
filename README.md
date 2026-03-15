@@ -204,6 +204,43 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## Deploy To Live Server (Render)
+
+This project can be deployed as one service because Flask serves both the API and frontend files.
+
+### 1. Push code to GitHub
+
+Ensure your latest code is pushed to your GitHub repository.
+
+### 2. Create Render web service
+
+1. Go to Render dashboard and choose **New +** -> **Blueprint**.
+2. Connect your GitHub repo.
+3. Render will detect `render.yaml` automatically.
+4. Click **Apply** to create the service.
+
+### 3. Wait for first build
+
+Render will:
+- install dependencies from `requirements.txt`
+- train URL and email models during build
+- start the app with Gunicorn
+
+### 4. Open your public URL
+
+After deployment, open your Render URL (for example: `https://phishing-attack-defender.onrender.com`).
+
+The same URL serves:
+- frontend UI at `/`
+- API endpoints like `/scan-url-detailed`, `/scan-email`, `/check-domain`
+
+### Optional: Run production server locally
+
+```bash
+pip install -r requirements.txt
+gunicorn --chdir backend app:app
+```
+
 ## Training the ML Model
 
 If `model.pkl` does not exist or you want to retrain it:

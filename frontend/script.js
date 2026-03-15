@@ -3,7 +3,24 @@
  * Multi-feature UI: Email Scanner, URL Scanner, Domain Checker, Takedown
  */
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = (() => {
+    // Optional override for hosted environments with custom API routing.
+    if (window.APP_API_BASE && typeof window.APP_API_BASE === 'string') {
+        return window.APP_API_BASE;
+    }
+
+    // Local static file opening or dev servers should still use Flask on :5000.
+    if (window.location.protocol === 'file:') {
+        return 'http://localhost:5000';
+    }
+
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5000';
+    }
+
+    // In production, backend serves frontend from the same origin.
+    return window.location.origin;
+})();
 
 // Theme toggle and PWA
 const themeToggle = document.getElementById('themeToggle');
@@ -182,7 +199,7 @@ async function checkUrl() {
         displayUrlResult(data, normalizedUrl);
     } catch (error) {
         if (String(error.message).includes('Failed to fetch')) {
-            showUrlError('Unable to connect to backend on http://localhost:5000');
+            showUrlError(`Unable to connect to backend on ${API_BASE}`);
         } else {
             showUrlError(error.message);
         }
