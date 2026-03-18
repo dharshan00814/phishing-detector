@@ -66,8 +66,7 @@ The project is designed for quick phishing triage workflows:
 - RandomForestClassifier
 
 ### External/Data Sources
-- Google Safe Browsing API integration support
-- WHOIS lookup support via HTTP API
+- Local hybrid scoring (ML + heuristic rules)
 - CSV-based training dataset in `phishing_ml_model/dataset.csv`
 
 ## Architecture
@@ -84,7 +83,7 @@ Flask API (backend/app.py)
         |-- URL hybrid scan
         |     |-- ML model inference
         |     |-- Rule-based URL analysis
-        |     |-- Safe Browsing / WHOIS enrichment
+        |     |-- Risk hardening rules
         |
         |-- Email scan
         |     |-- URL extraction
@@ -154,8 +153,7 @@ Rule-based phishing inspection module. Responsible for:
 - URL heuristic scoring
 - protocol/domain pattern checks
 - suspicious keyword scoring
-- Safe Browsing lookup support
-- WHOIS/domain age lookup support
+- compatibility helper stubs for disabled external checks
 
 ### `phishing_ml_model/feature_extractor.py`
 Extracts the numerical features used by the ML model.
@@ -334,7 +332,6 @@ Status thresholds:
 ## Limitations
 
 - This is not a replacement for enterprise-grade threat intelligence
-- WHOIS and Safe Browsing checks depend on external services and configuration
 - Typosquat detection is heuristic, not exhaustive
 - The ML model quality depends on the dataset used for training
 

@@ -4,22 +4,28 @@
  */
 
 const API_BASE = (() => {
+    const normalizeBase = (value) => String(value || '').trim().replace(/\/$/, '');
+
     // Optional override for hosted environments with custom API routing.
     if (window.APP_API_BASE && typeof window.APP_API_BASE === 'string') {
-        return window.APP_API_BASE;
+        const configured = normalizeBase(window.APP_API_BASE);
+        if (configured) return configured;
     }
+
+    const host = (window.location.hostname || '').toLowerCase();
 
     // Local static file opening or dev servers should still use Flask on :5000.
-    if (window.location.protocol === 'file:') {
+    if (window.location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1') {
         return 'http://localhost:5000';
     }
 
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:5000';
+    // Static-hosted frontend needs an explicit backend origin.
+    if (host.endsWith('github.io')) {
+        return 'https://phishing-attack-defender.onrender.com';
     }
 
     // In production, backend serves frontend from the same origin.
-    return window.location.origin;
+    return normalizeBase(window.location.origin);
 })();
 
 // Theme toggle and PWA
@@ -259,9 +265,27 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
     analysisCards.innerHTML = '';
 
     const analysis = ruleBased?.analysis || {};
-    const whois = ruleBased?.whois || {};
     const safeBrowsing = ruleBased?.safe_browsing || {};
     const isHttps = checkedUrl.startsWith('https://');
+    const parsedUrl = new URL(normalizeUrl(checkedUrl));
+    const host = parsedUrl.hostname.toLowerCase();
+    const domainWithoutWww = host.startsWith('www.') ? host.slice(4) : host;
+    const hasIpHost = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(domainWithoutWww);
+    const hyphenCount = (domainWithoutWww.match(/-/g) || []).length;
+    const dotCount = (domainWithoutWww.match(/\./g) || []).length;
+    const suspiciousTlds = ['.xyz', '.top', '.gq', '.tk', '.ml', '.cf', '.ga', '.click', '.work'];
+    const tunnelDomains = ['trycloudflare.com', 'ngrok.io', 'ngrok-free.app', 'loca.lt', 'localtunnel.me'];
+    const hasSuspiciousTld = suspiciousTlds.some((tld) => domainWithoutWww.endsWith(tld));
+    const isTunnelDomain = tunnelDomains.some((d) => domainWithoutWww === d || domainWithoutWww.endsWith(`.${d}`));
+
+    const domainRiskFlags = [hasIpHost, hyphenCount >= 3, dotCount >= 3, hasSuspiciousTld, isTunnelDomain];
+    const domainRiskLevel = domainRiskFlags.filter(Boolean).length;
+    const domainTraits = [];
+    if (hasIpHost) domainTraits.push('IP host');
+    if (hyphenCount >= 3) domainTraits.push(`many hyphens (${hyphenCount})`);
+    if (dotCount >= 3) domainTraits.push(`deep subdomains (${dotCount})`);
+    if (hasSuspiciousTld) domainTraits.push('risky TLD');
+    if (isTunnelDomain) domainTraits.push('temporary tunnel domain');
 
     const cards = [
         {
@@ -271,22 +295,24 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
             meta: isHttps ? `Protocol: HTTPS` : `Protocol: HTTP`,
         },
         {
-            title: 'Domain Age',
-            state: whois.age_days >= 90 ? 'good' : 'bad',
-            message: typeof whois.age_days === 'number'
-                ? `Domain age: ${whois.age_days} days`
-                : 'Domain age unavailable',
-            meta: whois.creation_date ? `Created: ${whois.creation_date}` : 'WHOIS data unavailable',
+            title: 'Domain Structure',
+            state: domainRiskLevel >= 2 ? 'bad' : 'good',
+            message: domainRiskLevel >= 2
+                ? 'Multiple risky domain traits detected'
+                : 'Domain structure looks normal',
+            meta: domainTraits.length
+                ? `Host: ${domainWithoutWww} | Traits: ${domainTraits.join(', ')}`
+                : `Host: ${domainWithoutWww}`,
         },
         {
-            title: 'Blacklist Check',
+            title: 'Threat Intelligence Check',
             state: safeBrowsing.is_safe === false ? 'bad' : 'good',
             message: safeBrowsing.is_safe === false
                 ? 'Detected on threat list'
                 : 'No blacklist threats detected',
             meta: Array.isArray(safeBrowsing.threats) && safeBrowsing.threats.length
                 ? `Threats: ${safeBrowsing.threats.join(', ')}`
-                : 'Source: Google Safe Browsing',
+                : 'Source: internal heuristics',
         },
         {
             title: 'URL Pattern Risk',

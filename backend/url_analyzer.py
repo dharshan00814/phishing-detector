@@ -1,19 +1,12 @@
 """
 URL Analyzer Module for Phishing Attack Defender
 Analyzes URLs for various phishing indicators and calculates risk score
-Integrates with Google Safe Browsing API and WHOIS API for enhanced detection
 """
 
-import os
 import re
-import requests
 from datetime import datetime
 from urllib.parse import urlparse
-
-
-# Environment variables for API keys
-SAFE_BROWSING_API_KEY = os.environ.get('SAFE_BROWSING_API_KEY', '')
-WHOIS_API_KEY = os.environ.get('WHOIS_API_KEY', '')
+import whois
 
 # Suspicious words commonly found in phishing URLs
 SUSPICIOUS_WORDS = [
@@ -33,161 +26,104 @@ MAX_URL_LENGTH = 200
 MIN_DOMAIN_AGE_DAYS = 90
 
 
+def _first_non_empty(value):
+    """Return first value when WHOIS field is a sequence."""
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            if item:
+                return item
+        return None
+    return value
+
+
+def _to_datetime(value):
+    """Convert WHOIS date fields to datetime when possible."""
+    value = _first_non_empty(value)
+    if isinstance(value, datetime):
+        return value
+    return None
+
+
+def _format_date(value):
+    dt = _to_datetime(value)
+    return dt.strftime('%Y-%m-%d') if dt else None
+
+
+def _normalize_name_servers(value):
+    if not value:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        return [str(item) for item in value if item]
+    return [str(value)]
+
+
 def check_google_safe_browsing(url):
-    """
-    Check URL against Google Safe Browsing API
-    
-    Args:
-        url (str): The URL to check
-        
-    Returns:
-        dict: Contains is_safe (bool) and threats (list)
-    """
-    if not SAFE_BROWSING_API_KEY:
-        return {
-            'is_safe': True,
-            'threats': [],
-            'error': 'Safe Browsing API key not configured'
-        }
-    
-    try:
-        safe_browsing_url = (
-            f"https://safebrowsing.googleapis.com/v4/threatMatches:find"
-            f"?key={SAFE_BROWSING_API_KEY}"
-        )
-        
-        payload = {
-            "client": {
-                "clientId": "phishing-attack-defender",
-                "clientVersion": "1.0.0"
-            },
-            "threatInfo": {
-                "threatTypes": [
-                    "MALWARE",
-                    "SOCIAL_ENGINEERING",
-                    "UNWANTED_SOFTWARE",
-                    "POTENTIALLY_HARMFUL_APPLICATION"
-                ],
-                "platformTypes": ["ANY_PLATFORM"],
-                "threatEntryTypes": ["URL"],
-                "threatEntries": [
-                    {"url": url}
-                ]
-            }
-        }
-        
-        response = requests.post(safe_browsing_url, json=payload, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'matches' in data and len(data['matches']) > 0:
-                threats = [match['threatType'] for match in data['matches']]
-        
-        return {
-            'is_safe': True,
-            'threats': [],
-            'error': None
-        }
-        
-    except Exception as e:
-        return {
-            'is_safe': True,
-            'threats': [],
-            'error': str(e)
-        }
+    """External API removed: return neutral safe result for compatibility."""
+    return {
+        'is_safe': True,
+        'threats': [],
+        'error': 'Google Safe Browsing API disabled'
+    }
 
 
 def check_whois_info(url):
-    """
-    Check domain WHOIS information using ipapi.co WHOIS API
-    
-    Args:
-        url (str): The URL to check
-        
-    Returns:
-        dict: Contains domain creation date, expiration date, age_days, is_new
-    """
-    try:
-        # Parse the domain from URL
-        parsed = urlparse(url if url.startswith(('http://', 'https://')) else 'http://' + url)
-        domain = parsed.netloc.lower()
-        
-        # Remove port if present
-        if ':' in domain:
-            domain = domain.split(':')[0]
-        
-        # Remove www. prefix
-        if domain.startswith('www.'):
-            domain = domain[4:]
-        
-        # Use ipapi.co WHOIS API (free tier available)
-        whois_url = f"https://ipapi.co/{domain}/json/whois/"
-        
-        headers = {}
-        if WHOIS_API_KEY:
-            headers['Authorization'] = f'Bearer {WHOIS_API_KEY}'
-        
-        response = requests.get(whois_url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            
-            if data.get('error'):
-                return {
-                    'creation_date': None,
-                    'expiration_date': None,
-                    'age_days': None,
-                    'is_new': False,
-                    'error': data.get('reason', 'WHOIS data not available')
-                }
-            
-            creation_date = data.get('creation_date')
-            expiration_date = data.get('expiration_date')
-            
-            if creation_date:
-                try:
-                    # Handle Unix timestamp
-                    if isinstance(creation_date, (int, float)):
-                        creation_datetime = datetime.fromtimestamp(creation_date)
-                    else:
-                        creation_datetime = datetime.fromisoformat(creation_date.replace('Z', '+00:00'))
-                    
-                    # Calculate domain age
-                    age_days = (datetime.now() - creation_datetime.replace(tzinfo=None)).days
-                    
-                    is_new = age_days < MIN_DOMAIN_AGE_DAYS
-                    
-                    return {
-                        'creation_date': creation_datetime.strftime('%Y-%m-%d'),
-                        'expiration_date': expiration_date,
-                        'age_days': age_days,
-                        'is_new': is_new,
-                        'error': None
-                    }
-                except Exception as e:
-                    return {
-                        'creation_date': creation_date,
-                        'expiration_date': expiration_date,
-                        'age_days': None,
-                        'is_new': False,
-                        'error': str(e)
-                    }
-        
+    """Lookup WHOIS information for a domain using python-whois."""
+    parsed = urlparse(url if url.startswith(('http://', 'https://')) else 'http://' + url)
+    domain = parsed.netloc.lower().split(':')[0]
+    if domain.startswith('www.'):
+        domain = domain[4:]
+
+    if not domain:
         return {
+            'domain': None,
             'creation_date': None,
             'expiration_date': None,
+            'updated_date': None,
             'age_days': None,
             'is_new': False,
-            'error': 'WHOIS API request failed'
+            'registrar': None,
+            'status': None,
+            'name_servers': [],
+            'error': 'Invalid domain',
         }
-        
-    except Exception as e:
+
+    try:
+        whois_data = whois.whois(domain)
+
+        creation_dt = _to_datetime(getattr(whois_data, 'creation_date', None))
+        expiration_dt = _to_datetime(getattr(whois_data, 'expiration_date', None))
+        updated_dt = _to_datetime(getattr(whois_data, 'updated_date', None))
+
+        age_days = None
+        is_new = False
+        if creation_dt is not None:
+            age_days = max(0, (datetime.now() - creation_dt.replace(tzinfo=None)).days)
+            is_new = age_days < MIN_DOMAIN_AGE_DAYS
+
         return {
+            'domain': domain,
+            'creation_date': _format_date(getattr(whois_data, 'creation_date', None)),
+            'expiration_date': _format_date(getattr(whois_data, 'expiration_date', None)),
+            'updated_date': _format_date(getattr(whois_data, 'updated_date', None)),
+            'age_days': age_days,
+            'is_new': is_new,
+            'registrar': _first_non_empty(getattr(whois_data, 'registrar', None)),
+            'status': _first_non_empty(getattr(whois_data, 'status', None)),
+            'name_servers': _normalize_name_servers(getattr(whois_data, 'name_servers', None)),
+            'error': None,
+        }
+    except Exception as exc:
+        return {
+            'domain': domain,
             'creation_date': None,
             'expiration_date': None,
+            'updated_date': None,
             'age_days': None,
             'is_new': False,
-            'error': str(e)
+            'registrar': None,
+            'status': None,
+            'name_servers': [],
+            'error': str(exc),
         }
 
 
@@ -363,10 +299,16 @@ def analyze_url(url):
             'threats': safe_browsing_result['threats']
         },
         'whois': {
+            'domain': whois_result.get('domain'),
             'creation_date': whois_result.get('creation_date'),
             'expiration_date': whois_result.get('expiration_date'),
+            'updated_date': whois_result.get('updated_date'),
             'age_days': whois_result.get('age_days'),
-            'is_new': whois_result.get('is_new')
+            'is_new': whois_result.get('is_new'),
+            'registrar': whois_result.get('registrar'),
+            'status': whois_result.get('status'),
+            'name_servers': whois_result.get('name_servers'),
+            'error': whois_result.get('error'),
         }
     }
 

@@ -3,7 +3,30 @@
  * Multi-feature UI: Email Scanner, URL Scanner, Domain Checker, Takedown
  */
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = (() => {
+    const normalizeBase = (value) => String(value || '').trim().replace(/\/$/, '');
+
+    // Optional manual override from HTML.
+    if (window.APP_API_BASE && typeof window.APP_API_BASE === 'string') {
+        const configured = normalizeBase(window.APP_API_BASE);
+        if (configured) return configured;
+    }
+
+    const host = (window.location.hostname || '').toLowerCase();
+
+    // Local development should keep using Flask on :5000.
+    if (window.location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1') {
+        return 'http://localhost:5000';
+    }
+
+    // Static-hosted frontend needs an explicit backend origin.
+    if (host.endsWith('github.io')) {
+        return 'https://phishing-attack-defender.onrender.com';
+    }
+
+    // When backend serves frontend, same origin works.
+    return normalizeBase(window.location.origin);
+})();
 
 // Theme toggle and PWA
 const themeToggle = document.getElementById('themeToggle');
@@ -206,7 +229,7 @@ async function checkUrl() {
         displayUrlResult(data, normalizedUrl);
     } catch (error) {
         if (String(error.message).includes('Failed to fetch')) {
-            showUrlError('Unable to connect to backend on http://localhost:5000');
+            showUrlError(`Unable to connect to backend on ${API_BASE}`);
         } else {
             showUrlError(error.message);
         }
@@ -269,6 +292,19 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
     const whois = ruleBased?.whois || {};
     const safeBrowsing = ruleBased?.safe_browsing || {};
     const isHttps = checkedUrl.startsWith('https://');
+    const whoisAvailable = !whois.error && (
+        whois.creation_date ||
+        whois.expiration_date ||
+        typeof whois.age_days === 'number' ||
+        whois.registrar
+    );
+    const whoisMetaParts = [];
+
+    if (whois.creation_date) whoisMetaParts.push(`Created: ${whois.creation_date}`);
+    if (whois.expiration_date) whoisMetaParts.push(`Expires: ${whois.expiration_date}`);
+    if (whois.updated_date) whoisMetaParts.push(`Updated: ${whois.updated_date}`);
+    if (whois.registrar) whoisMetaParts.push(`Registrar: ${whois.registrar}`);
+    if (whois.status) whoisMetaParts.push(`Status: ${whois.status}`);
 
     const cards = [
         {
@@ -278,12 +314,14 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
             meta: isHttps ? `Protocol: HTTPS` : `Protocol: HTTP`,
         },
         {
-            title: 'Domain Age',
-            state: whois.age_days >= 90 ? 'good' : 'bad',
-            message: typeof whois.age_days === 'number'
-                ? `Domain age: ${whois.age_days} days`
-                : 'Domain age unavailable',
-            meta: whois.creation_date ? `Created: ${whois.creation_date}` : 'WHOIS data unavailable',
+            title: 'WHOIS Information',
+            state: whoisAvailable && whois.is_new === false ? 'good' : 'bad',
+            message: whois.error
+                ? `WHOIS lookup failed: ${whois.error}`
+                : typeof whois.age_days === 'number'
+                    ? `Domain age: ${whois.age_days} days`
+                    : 'WHOIS found but age is unavailable',
+            meta: whoisMetaParts.length ? whoisMetaParts.join(' | ') : 'WHOIS data unavailable',
         },
         {
             title: 'Blacklist Check',
