@@ -13,5 +13,9 @@ dependencies = [
     "scikit-learn>=1.5,<2.0",
 ]
 
+# Some VerceI/uv workflows expect a top-level [project] table.
+# Keep this file TOML-valid and avoid accidental formatting issues.
+
 [tool.vercel]
 entrypoint = "backend.app:app"
+
