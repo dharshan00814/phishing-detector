@@ -5,22 +5,33 @@
 
 const API_BASE = (() => {
     const normalizeBase = (value) => String(value || '').trim().replace(/\/$/, '');
+    const host = (window.location.hostname || '').toLowerCase();
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    const isLocalProtocol = window.location.protocol === 'file:';
 
     // Optional manual override from HTML.
     if (window.APP_API_BASE && typeof window.APP_API_BASE === 'string') {
         const configured = normalizeBase(window.APP_API_BASE);
-        if (configured) return configured;
+        if (configured) {
+            const configuredLooksLocal = /localhost|127\.0\.0\.1/i.test(configured);
+            // Ignore localhost override when the page itself is publicly hosted.
+            if (!(configuredLooksLocal && !(isLocalHost || isLocalProtocol))) {
+                return configured;
+            }
+        }
     }
 
-    const host = (window.location.hostname || '').toLowerCase();
-
     // Local development should keep using Flask on :5000.
-    if (window.location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1') {
+    if (isLocalProtocol || isLocalHost) {
         return 'http://localhost:5000';
     }
 
     // Static-hosted frontend needs an explicit backend origin.
-    if (host.endsWith('github.io')) {
+    if (
+        host.endsWith('github.io') ||
+        host.endsWith('vercel.app') ||
+        host.endsWith('netlify.app')
+    ) {
         return 'https://phishing-attack-defender.onrender.com';
     }
 
@@ -196,6 +207,78 @@ function normalizeUrl(value) {
     return value;
 }
 
+function buildFallbackApiBase() {
+    if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
+        return null;
+    }
+
+    const host = (window.location.hostname || '').trim();
+    if (!host || window.location.port === '5000') {
+        return null;
+    }
+
+    return `${window.location.protocol}//${host}:5000`;
+}
+
+async function parseApiJsonResponse(response) {
+    const text = await response.text();
+    let data = null;
+
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch (_) {
+            data = null;
+        }
+    }
+
+    if (!response.ok) {
+        if (data && data.error) {
+            throw new Error(data.error);
+        }
+
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        if ((text || '').trim().startsWith('<') || contentType.includes('text/html')) {
+            throw new Error(`Backend returned HTML instead of JSON from ${API_BASE}`);
+        }
+
+        throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    if (!data) {
+        throw new Error('Invalid backend response: expected JSON');
+    }
+
+    return data;
+}
+
+async function postJsonWithApiFallback(path, payload) {
+    const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}${path}`, requestOptions);
+        return await parseApiJsonResponse(response);
+    } catch (error) {
+        const fallbackBase = buildFallbackApiBase();
+        const shouldRetry = (
+            fallbackBase &&
+            fallbackBase !== API_BASE &&
+            /Failed to fetch|expected JSON|returned HTML/i.test(String(error?.message || ''))
+        );
+
+        if (!shouldRetry) {
+            throw error;
+        }
+
+        const fallbackResponse = await fetch(`${fallbackBase}${path}`, requestOptions);
+        return await parseApiJsonResponse(fallbackResponse);
+    }
+}
+
 async function checkUrl() {
     const raw = urlInput.value.trim();
     hideUrlResults();
@@ -215,16 +298,7 @@ async function checkUrl() {
     showUrlLoading();
 
     try {
-        const response = await fetch(`${API_BASE}/scan-url-detailed`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: normalizedUrl }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to analyze URL');
-        }
+        const data = await postJsonWithApiFallback('/scan-url-detailed', { url: normalizedUrl });
 
         displayUrlResult(data, normalizedUrl);
     } catch (error) {
@@ -400,14 +474,7 @@ async function scanEmail() {
     scanEmailBtn.textContent = 'Scanning...';
 
     try {
-        const response = await fetch(`${API_BASE}/scan-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email_text: emailText }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Email scan failed');
+        const data = await postJsonWithApiFallback('/scan-email', { email_text: emailText });
 
         const lines = [
             `<strong>Summary:</strong> ${data.summary.total_urls} URL(s), ` +
@@ -448,14 +515,7 @@ async function checkTyposquat() {
     checkTyposquatBtn.textContent = 'Checking...';
 
     try {
-        const response = await fetch(`${API_BASE}/check-typosquat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ domain: candidateDomain }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Domain check failed');
+        const data = await postJsonWithApiFallback('/check-typosquat', { domain: candidateDomain });
 
         const verdictLabel = data.verdict === 'phishing' ? 'PHISHING' : 'NOT PHISHING';
         const indicators = Array.isArray(data.indicators) && data.indicators.length
@@ -499,14 +559,7 @@ async function generateTakedown() {
     generateTakedownBtn.textContent = 'Generating...';
 
     try {
-        const response = await fetch(`${API_BASE}/generate-takedown`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Takedown template generation failed');
+        const data = await postJsonWithApiFallback('/generate-takedown', payload);
 
         currentTakedownReport = {
             recipientEmail: data.recipient_email,
