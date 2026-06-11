@@ -25,11 +25,20 @@ except ImportError:
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ML_MODEL_DIR = os.path.join(PROJECT_ROOT, 'phishing_ml_model')
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, 'frontend')
+# Ensure imports like `from feature_extractor import ...` work regardless of how app.py is executed.
 if ML_MODEL_DIR not in sys.path:
     sys.path.append(ML_MODEL_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
 
-from feature_extractor import FEATURE_NAMES, extract_features
-from email_feature_extractor import EMAIL_FEATURE_NAMES, extract_email_features
+
+from phishing_ml_model.feature_extractor import FEATURE_NAMES, extract_features
+from phishing_ml_model.email_feature_extractor import EMAIL_FEATURE_NAMES, extract_email_features
+
+
+
+
+
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
@@ -166,6 +175,77 @@ def predict_url_ml(url):
         'prediction': prediction,
         'ml_confidence': confidence,
     }
+
+
+def predict_email_ml(email_text):
+    """Predict phishing vs legitimate from email text using the trained email model."""
+    model = load_email_ml_model()
+    features = extract_email_features(email_text)
+    features_df = pd.DataFrame([features], columns=EMAIL_FEATURE_NAMES)
+
+    prediction = int(model.predict(features_df)[0])
+    probabilities = model.predict_proba(features_df)[0]
+    confidence = round(float(probabilities[prediction]) * 100, 2)
+
+    if prediction == 1:
+        status = 'phishing'
+        risk_score = confidence
+        message = 'Phishing email detected (Email ML model)'
+    else:
+        status = 'safe'
+        risk_score = round(100 - confidence, 2)
+        message = 'Email appears safe (Email ML model)'
+
+    return {
+        'status': status,
+        'risk_score': risk_score,
+        'message': message,
+        'prediction': prediction,
+        'ml_confidence': confidence,
+    }
+
+
+def _risk_status_from_score(score):
+    score = float(score)
+    if score >= 70:
+        return 'phishing'
+    if score >= 40:
+        return 'suspicious'
+    return 'safe'
+
+
+def combine_email_and_url_verdicts(email_ml, url_results):
+    """Blend email ML verdict with URL scan verdicts into one overall risk."""
+    url_max_risk = max((float(r.get('risk_score', 0)) for r in url_results), default=0.0)
+
+    # Email ML confidence contributes more directly than URL risk.
+    email_ml_risk = float(email_ml.get('risk_score', 0))
+
+    overall_score = max(url_max_risk, email_ml_risk)
+
+    # If email ML is strong phishing, harden the score even if no URLs are present.
+    if email_ml.get('prediction') == 1 and email_ml.get('ml_confidence', 0) >= 70:
+        overall_score = max(overall_score, 80.0)
+
+    overall_score = min(round(overall_score, 2), 100.0)
+    overall_status = _risk_status_from_score(overall_score)
+
+    if overall_status == 'phishing':
+        message = 'High risk: email and/or contained links look phishing'
+    elif overall_status == 'suspicious':
+        message = 'Medium risk: suspicious email and/or contained links'
+    else:
+        message = 'Low risk: email and links appear safe'
+
+    if overall_status != 'safe' and any(r.get('status') == 'phishing' for r in url_results):
+        message += ' (at least one contained URL is phishing)' 
+
+    return {
+        'overall_status': overall_status,
+        'overall_risk_score': overall_score,
+        'overall_message': message,
+    }
+
 
 
 def _get_domain(url):
@@ -717,11 +797,13 @@ def scan_email():
         if not isinstance(email_text, str) or not email_text.strip():
             return jsonify({'error': 'email_text is required'}), 400
 
+        email_ml = predict_email_ml(email_text)
+
         urls = _extract_urls_from_text(email_text)
-        results = []
+        url_results = []
         for url in urls:
             scan = combine_scan_result(url)
-            results.append({
+            url_results.append({
                 'url': url,
                 'status': scan['status'],
                 'risk_score': scan['risk_score'],
@@ -729,20 +811,35 @@ def scan_email():
                 'ml_confidence': scan['ml_confidence'],
             })
 
+        overall = combine_email_and_url_verdicts(email_ml, url_results)
+
         summary = {
-            'total_urls': len(results),
-            'phishing': sum(1 for r in results if r['status'] == 'phishing'),
-            'suspicious': sum(1 for r in results if r['status'] == 'suspicious'),
-            'safe': sum(1 for r in results if r['status'] == 'safe'),
+            'total_urls': len(url_results),
+            'phishing': sum(1 for r in url_results if r['status'] == 'phishing'),
+            'suspicious': sum(1 for r in url_results if r['status'] == 'suspicious'),
+            'safe': sum(1 for r in url_results if r['status'] == 'safe'),
         }
 
         return jsonify({
             'status': 'ok',
+            'email_ml': {
+                'status': email_ml['status'],
+                'risk_score': email_ml['risk_score'],
+                'message': email_ml['message'],
+                'prediction': email_ml['prediction'],
+                'ml_confidence': email_ml['ml_confidence'],
+            },
+            'overall': {
+                'status': overall['overall_status'],
+                'risk_score': overall['overall_risk_score'],
+                'message': overall['overall_message'],
+            },
             'summary': summary,
-            'results': results,
+            'results': url_results,
         })
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 
 
 @app.route('/check-domain', methods=['POST'])
