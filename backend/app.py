@@ -43,7 +43,9 @@ from phishing_ml_model.email_feature_extractor import EMAIL_FEATURE_NAMES, extra
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
 # Enable CORS to allow frontend to communicate with backend
-CORS(app)
+# Allow all origins for the deployed Vercel frontend.
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 MODEL_PATH = os.path.join(ML_MODEL_DIR, 'model.pkl')
 EMAIL_MODEL_PATH = os.path.join(ML_MODEL_DIR, 'email_model.pkl')
@@ -755,8 +757,7 @@ def scan_url_detailed():
         if not data or 'url' not in data:
             return jsonify({
                 'error': 'URL is required in the request body'
-            }), 400
-        
+            }), 400        
         url = data['url']
         
         if not url or not isinstance(url, str):
