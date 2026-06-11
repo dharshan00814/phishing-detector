@@ -14,7 +14,11 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 import requests
-from url_analyzer import analyze_url, check_google_safe_browsing, check_whois_info, SUSPICIOUS_WORDS
+
+try:
+    from .url_analyzer import analyze_url, check_google_safe_browsing, check_whois_info, SUSPICIOUS_WORDS
+except ImportError:
+    from url_analyzer import analyze_url, check_google_safe_browsing, check_whois_info, SUSPICIOUS_WORDS
 
 
 # Make phishing_ml_model importable from backend/
