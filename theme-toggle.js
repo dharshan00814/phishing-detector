@@ -1,7 +1,2 @@
-// Temporary theme toggle logic until script.js update
-document.addEventListener('DOMContentLoaded', () => {
-  const html = document.documentElement;
-  const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  html.classList.toggle('dark', isDark);
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-});
+// Theme toggle is handled by script.js and the inline setup in index.html.
+// This file is kept for compatibility but no longer contains duplicate logic.

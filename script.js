@@ -9,7 +9,7 @@ const API_BASE = (() => {
     const isLocalHost = host === 'localhost' || host === '127.0.0.1';
     const isLocalProtocol = window.location.protocol === 'file:';
 
-    // Optional manual override from HTML.
+    // Optional override for hosted environments with custom API routing.
     if (window.APP_API_BASE && typeof window.APP_API_BASE === 'string') {
         const configured = normalizeBase(window.APP_API_BASE);
         if (configured) {
@@ -21,12 +21,12 @@ const API_BASE = (() => {
         }
     }
 
-    // Local development should keep using Flask on :5000.
+    // Local static file opening or dev servers should still use Flask on :5000.
     if (isLocalProtocol || isLocalHost) {
         return 'http://localhost:5000';
     }
 
-    // Static-hosted frontend needs an explicit backend origin.
+    // Static-hosted frontend domains need an explicit backend origin.
     if (
         host.endsWith('github.io') ||
         host.endsWith('vercel.app') ||
@@ -35,7 +35,7 @@ const API_BASE = (() => {
         return 'https://phishing-attack-defender.onrender.com';
     }
 
-    // When backend serves frontend, same origin works.
+    // In production, backend serves frontend from the same origin.
     return normalizeBase(window.location.origin);
 })();
 
@@ -51,25 +51,6 @@ function toggleTheme() {
 
 if (themeToggle) {
   themeToggle.addEventListener('click', toggleTheme);
-}
-
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
-
-function showInstallPrompt() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('PWA installed');
-      }
-      deferredPrompt = null;
-    });
-  }
 }
 
 window.addEventListener('appinstalled', () => {
@@ -108,11 +89,6 @@ style.textContent = `
 document.head.appendChild(style);
 
 // Tab controls
-window.addEventListener('load', () => {
-  if ('BeforeInstallPromptEvent' in window && deferredPrompt) {
-    showInstallPrompt();
-  }
-});
 const featureTabs = document.querySelectorAll('.feature-tab');
 const featurePanels = {
     email: document.getElementById('panel-email'),
@@ -363,22 +339,27 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
     analysisCards.innerHTML = '';
 
     const analysis = ruleBased?.analysis || {};
-    const whois = ruleBased?.whois || {};
     const safeBrowsing = ruleBased?.safe_browsing || {};
     const isHttps = checkedUrl.startsWith('https://');
-    const whoisAvailable = !whois.error && (
-        whois.creation_date ||
-        whois.expiration_date ||
-        typeof whois.age_days === 'number' ||
-        whois.registrar
-    );
-    const whoisMetaParts = [];
+    const parsedUrl = new URL(normalizeUrl(checkedUrl));
+    const host = parsedUrl.hostname.toLowerCase();
+    const domainWithoutWww = host.startsWith('www.') ? host.slice(4) : host;
+    const hasIpHost = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(domainWithoutWww);
+    const hyphenCount = (domainWithoutWww.match(/-/g) || []).length;
+    const dotCount = (domainWithoutWww.match(/\./g) || []).length;
+    const suspiciousTlds = ['.xyz', '.top', '.gq', '.tk', '.ml', '.cf', '.ga', '.click', '.work'];
+    const tunnelDomains = ['trycloudflare.com', 'ngrok.io', 'ngrok-free.app', 'loca.lt', 'localtunnel.me'];
+    const hasSuspiciousTld = suspiciousTlds.some((tld) => domainWithoutWww.endsWith(tld));
+    const isTunnelDomain = tunnelDomains.some((d) => domainWithoutWww === d || domainWithoutWww.endsWith(`.${d}`));
 
-    if (whois.creation_date) whoisMetaParts.push(`Created: ${whois.creation_date}`);
-    if (whois.expiration_date) whoisMetaParts.push(`Expires: ${whois.expiration_date}`);
-    if (whois.updated_date) whoisMetaParts.push(`Updated: ${whois.updated_date}`);
-    if (whois.registrar) whoisMetaParts.push(`Registrar: ${whois.registrar}`);
-    if (whois.status) whoisMetaParts.push(`Status: ${whois.status}`);
+    const domainRiskFlags = [hasIpHost, hyphenCount >= 3, dotCount >= 3, hasSuspiciousTld, isTunnelDomain];
+    const domainRiskLevel = domainRiskFlags.filter(Boolean).length;
+    const domainTraits = [];
+    if (hasIpHost) domainTraits.push('IP host');
+    if (hyphenCount >= 3) domainTraits.push(`many hyphens (${hyphenCount})`);
+    if (dotCount >= 3) domainTraits.push(`deep subdomains (${dotCount})`);
+    if (hasSuspiciousTld) domainTraits.push('risky TLD');
+    if (isTunnelDomain) domainTraits.push('temporary tunnel domain');
 
     const cards = [
         {
@@ -388,24 +369,24 @@ function displayAnalysisCards(checkedUrl, ruleBased) {
             meta: isHttps ? `Protocol: HTTPS` : `Protocol: HTTP`,
         },
         {
-            title: 'WHOIS Information',
-            state: whoisAvailable && whois.is_new === false ? 'good' : 'bad',
-            message: whois.error
-                ? `WHOIS lookup failed: ${whois.error}`
-                : typeof whois.age_days === 'number'
-                    ? `Domain age: ${whois.age_days} days`
-                    : 'WHOIS found but age is unavailable',
-            meta: whoisMetaParts.length ? whoisMetaParts.join(' | ') : 'WHOIS data unavailable',
+            title: 'Domain Structure',
+            state: domainRiskLevel >= 2 ? 'bad' : 'good',
+            message: domainRiskLevel >= 2
+                ? 'Multiple risky domain traits detected'
+                : 'Domain structure looks normal',
+            meta: domainTraits.length
+                ? `Host: ${domainWithoutWww} | Traits: ${domainTraits.join(', ')}`
+                : `Host: ${domainWithoutWww}`,
         },
         {
-            title: 'Blacklist Check',
+            title: 'Threat Intelligence Check',
             state: safeBrowsing.is_safe === false ? 'bad' : 'good',
             message: safeBrowsing.is_safe === false
                 ? 'Detected on threat list'
                 : 'No blacklist threats detected',
             meta: Array.isArray(safeBrowsing.threats) && safeBrowsing.threats.length
                 ? `Threats: ${safeBrowsing.threats.join(', ')}`
-                : 'Source: Google Safe Browsing',
+                : 'Source: internal heuristics',
         },
         {
             title: 'URL Pattern Risk',
@@ -515,7 +496,7 @@ async function checkTyposquat() {
     checkTyposquatBtn.textContent = 'Checking...';
 
     try {
-        const data = await postJsonWithApiFallback('/check-typosquat', { domain: candidateDomain });
+        const data = await postJsonWithApiFallback('/check-domain', { domain: candidateDomain });
 
         const verdictLabel = data.verdict === 'phishing' ? 'PHISHING' : 'NOT PHISHING';
         const indicators = Array.isArray(data.indicators) && data.indicators.length
@@ -527,6 +508,7 @@ async function checkTyposquat() {
             `<br><strong>Risk Score:</strong> ${data.risk_score}%`,
             `<br><strong>Message:</strong> ${escapeHtml(data.message)}`,
             `<br><strong>Domain:</strong> ${escapeHtml(data.domain)}`,
+            `<br><strong>ML Confidence:</strong> ${escapeHtml(String(data.ml_confidence ?? 'N/A'))}%`,
             `<br><strong>Analysis:</strong> ${indicators}`,
         ].join('');
         typosquatResult.classList.remove('hidden');
