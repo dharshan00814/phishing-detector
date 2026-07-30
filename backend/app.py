@@ -46,6 +46,30 @@ app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 # Allow all origins for the deployed Vercel frontend.
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Hard CORS headers to guarantee preflight passes on Render (in case flask-cors
+# middleware isn't applied to every route in a specific deployment).
+CORS_ALLOW_ORIGIN = "*"
+CORS_ALLOW_HEADERS = "Content-Type, Authorization"
+CORS_ALLOW_METHODS = "GET, POST, OPTIONS"
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers.setdefault("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN)
+    response.headers.setdefault("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS)
+    response.headers.setdefault("Access-Control-Allow-Methods", CORS_ALLOW_METHODS)
+    return response
+
+
+@app.route("/scan-url-detailed", methods=["OPTIONS"])
+def scan_url_detailed_options():
+    # Explicit preflight response for the endpoint used by the UI.
+    resp = jsonify({"status": "ok"})
+    resp.headers["Access-Control-Allow-Origin"] = CORS_ALLOW_ORIGIN
+    resp.headers["Access-Control-Allow-Headers"] = CORS_ALLOW_HEADERS
+    resp.headers["Access-Control-Allow-Methods"] = CORS_ALLOW_METHODS
+    return resp, 200
+
+
 
 MODEL_PATH = os.path.join(ML_MODEL_DIR, 'model.pkl')
 EMAIL_MODEL_PATH = os.path.join(ML_MODEL_DIR, 'email_model.pkl')
