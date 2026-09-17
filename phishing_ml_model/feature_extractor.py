@@ -11,7 +11,11 @@ import re
 # Keywords frequently abused in phishing URLs
 SUSPICIOUS_KEYWORDS = ['login', 'verify', 'secure', 'bank', 'account',
                        'update', 'confirm', 'password', 'credential',
-                       'signin', 'validate', 'payment', 'invoice', 'support']
+                       'signin', 'validate', 'payment', 'invoice', 'support',
+                       'security', 'wallet', 'recovery', 'refund', 'bonus',
+                       'prize', 'winner', 'gift', 'lottery', 'unlock',
+                       'suspend', 'expire', 'urgent', 'billing', 'reset',
+                       'authenticate', 'deposit', 'withdraw']
 
 
 def has_ip_address(url):

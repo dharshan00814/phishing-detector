@@ -29,7 +29,52 @@ print("🤖 Training DUAL Phishing Detection Models\n" + "="*60)
 print("\n📡 [Phase 1] Training URL Classifier...")
 dataset_path = os.path.join(os.path.dirname(__file__), 'dataset.csv')
 df_url = pd.read_csv(dataset_path)
-print(f"   Loaded {len(df_url)} URL samples")
+
+
+def build_training_augmentation() -> pd.DataFrame:
+    """Return synthetic rows covering trusted domains and modern phishing patterns."""
+    legit_urls = [
+        'https://gmail.com',
+        'https://mail.google.com',
+        'https://accounts.google.com',
+        'https://myaccount.google.com',
+        'https://workspace.google.com',
+        'https://google.com',
+        'https://docs.google.com',
+        'https://drive.google.com',
+        'https://outlook.live.com',
+        'https://login.microsoftonline.com',
+        'https://appleid.apple.com',
+        'https://www.paypal.com',
+        'https://docs.python.org/3/library/urllib.parse.html',
+        'https://developer.mozilla.org/en-US/docs/Web/JavaScript',
+        'https://stackoverflow.com/questions/tagged/python',
+        'https://en.wikipedia.org/wiki/Phishing_(general)',
+    ]
+
+    phishing_urls = [
+        'http://gmail-security-alert-login.com/verify',
+        'http://gmail-account-validate.top/signin',
+        'http://accounts-google-verify-login.xyz/update',
+        'http://google-auth-reset-secure.tk/login',
+        'http://gmai1.com.verify-security-login.xyz',
+        'http://mail-google-confirm-password.click',
+        'http://paypa1.com-account-verify.top/login',
+        'http://secure-paypal-confirm.work/update',
+        'http://outlook-credential-check.ml/signin',
+        'http://office365-password-reset.cf/secure',
+        'http://appleid-confirm-login.ga/verify',
+        'http://micr0soft-account-alert.gq/login',
+    ]
+
+    rows = [{'url': url, 'label': 0} for url in legit_urls]
+    rows.extend({'url': url, 'label': 1} for url in phishing_urls)
+    return pd.DataFrame(rows)
+
+
+augmentation_df = build_training_augmentation()
+df_url = pd.concat([df_url, augmentation_df], ignore_index=True)
+print(f"   Loaded {len(df_url)} URL samples (incl. {len(augmentation_df)} augmentation rows)")
 
 X_url = pd.DataFrame([extract_features(row['url']) for _, row in df_url.iterrows()], 
                      columns=FEATURE_NAMES)

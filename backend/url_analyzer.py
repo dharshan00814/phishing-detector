@@ -13,7 +13,12 @@ SUSPICIOUS_WORDS = [
     'login', 'verify', 'update', 'secure', 'bank',
     'account', 'confirm', 'password', 'credential',
     'signin', 'validate', 'payment', 'invoice',
-    'support', 'customer', 'service', 'alert'
+    'support', 'customer', 'service', 'alert',
+    'security', 'sign-in', 'wallet', 'recovery',
+    'refund', 'bonus', 'prize', 'winner', 'gift',
+    'lottery', 'giveaway', 'unlock', 'suspend',
+    'expire', 'urgent', 'billing', 'reset',
+    'webscr', 'authenticate', 'deposit', 'withdraw'
 ]
 
 # Minimum URL length to be considered suspicious

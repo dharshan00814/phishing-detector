@@ -115,9 +115,7 @@ Flask API (backend/app.py)
 4. Each URL is analyzed through the hybrid scan path
 5. Frontend renders summary counts and detected links
 
-## Project Structure
-
-```text
+## Project Structure```text
 project/
 ├── backend/
 │   ├── app.py
@@ -128,11 +126,18 @@ project/
 │   └── style.css
 ├── phishing_ml_model/
 │   ├── dataset.csv
+│   ├── email_dataset.csv
+│   ├── email_feature_extractor.py
 │   ├── feature_extractor.py
-│   ├── predict.py
-│   ├── train_model.py
-│   └── model.pkl
+│   ├── train_models.py
+│   ├── model.pkl
+│   └── email_model.pkl
+├── app.py            # root entry point (python app.py)
+├── run.js            # Node launcher (npm start)
+├── start.bat         # Windows launcher
 ├── requirements.txt
+├── render.yaml
+├── pyproject.toml
 ├── README.md
 └── TODO.md
 ```
@@ -158,8 +163,8 @@ Rule-based phishing inspection module. Responsible for:
 ### `phishing_ml_model/feature_extractor.py`
 Extracts the numerical features used by the ML model.
 
-### `phishing_ml_model/train_model.py`
-Trains the Random Forest classifier from the CSV dataset and saves `model.pkl`.
+### `phishing_ml_model/train_models.py`
+Trains both the URL and email Random Forest classifiers from the CSV datasets and saves `model.pkl` + `email_model.pkl`.
 
 ### `frontend/script.js`
 Handles tab switching, API requests, and result rendering for all modules.
@@ -241,11 +246,11 @@ gunicorn --chdir backend app:app
 
 ## Training the ML Model
 
-If `model.pkl` does not exist or you want to retrain it:
+If `model.pkl` / `email_model.pkl` do not exist or you want to retrain them:
 
 ```bash
 cd phishing_ml_model
-python train_model.py
+python train_models.py
 ```
 
 This will:
@@ -253,7 +258,7 @@ This will:
 - extract features for each URL
 - train a Random Forest classifier
 - print evaluation metrics
-- save `model.pkl`
+- save `model.pkl` and `email_model.pkl`
 
 ## API Endpoints
 
